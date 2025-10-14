@@ -1,0 +1,82 @@
+{
+    "train": [
+      {
+        "machine": {
+          "batch": "slurm",
+          "hostname": "localhost",
+          "port": 22,
+          "username": "pinchenx",
+          "work_path": "/home/pinchenx/data.gpfs/tmp"
+        },
+        "resources": {
+          "numb_node": 1,
+          "numb_gpu": 1,
+          "task_per_node": 4,
+          "partition": "all",
+          "exclude_list": [],
+          "mem_limit": 32,
+          "source_list": [
+            "/home/pinchenx/tigress/utilities/activate_dpgen.sh"
+          ],
+          "module_list": [
+          ],
+          "time_limit": "23:00:00"
+        },
+        "group_size": 1,
+        "python_path": "python"
+      }
+    ],
+    "model_devi": [
+      {
+        "machine": {
+          "machine_type": "slurm",
+          "hostname": "localhost",
+          "port": 22,
+          "username": "pinchenx",
+          "work_path": "/home/pinchenx/data.gpfs/tmp"
+        },
+        "resources": {
+          "numb_node": 1,
+          "numb_gpu": 1,
+          "task_per_node": 4,
+          "partition": "all",
+          "exclude_list": [],
+          "mem_limit": 32,
+          "source_list": [
+            "/home/pinchenx/tigress/utilities/activate_dpgen.sh"
+          ],
+          "module_list": [
+          ],
+          "time_limit": "23:00:0"
+        },
+        "command": "lmp",
+        "group_size": 10
+      }
+    ],
+    "fp": [
+      {
+        "machine": {
+          "machine_type": "slurm",
+          "hostname": "localhost",
+          "port": 22,
+          "username": "pinchenx",
+          "work_path": "/home/pinchenx/data.gpfs/tmp"
+        },
+        "resources": {
+          "numb_node": 2,
+          "task_per_node": 40,
+          "numb_gpu": 0,
+          "exclude_list": [],
+          "with_mpi": false,
+          "source_list": [
+            "/home/pinchenx/tigress/utilities/activate_vasp.sh"
+          ],
+          "module_list": [],
+          "time_limit": "5:00:00",
+          "_comment": "that's All"
+        },
+        "command": "srun vasp_std",
+        "group_size": 10
+      }
+    ]
+  }

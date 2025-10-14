@@ -1,0 +1,30 @@
+# workflow
+ ISTART = 0    ! 0 from scratch
+ ICHARG = 2    ! 0 from scratch
+ ISYM   = 2    ! 2/3 for symmetry; 0 to turn off for MD
+ PREC   = Normal    ! standard precision 
+ 
+# electronic relaxation
+# ENCUT = 600
+ ISMEAR = 0 ; SIGMA = 0.05
+ METAGGA=SCAN
+ LASPH  =.TRUE.   ! set to True for meta-GGA calculation
+ KSPACING = 0.6 
+ NELM = 100
+#  ADDGRID= .False.  ! 
+#  IMIX   = 1  ! 1 for simple mixing, 4(default) Pulay mixing
+#  AMIX   = 0.5
+#  BMIX   = 0.0001
+
+# ionic relaxation
+ IBRION = 1       ! optimization method:  1 for quasi-newtonian, 2 for CG, 3 for damped MD
+ ISIF   = 3       ! 2 for fixed cell; 3 for variable cell
+ NSW    = 20         ! maximal ionic relaxation steps
+ EDIFF  = 1E-5
+ EDIFFG = -1E-4   ! forces smaller 0.02 A/eV
+
+## MD (when IBRION=0)
+# TEBEG   = 0
+
+# Machine specific
+ NCORE = 20     ! NCORE  =  number-of-cores-per-socket

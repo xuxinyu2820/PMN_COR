@@ -1,0 +1,174 @@
+'''
+Test this on 80GB GPU. start an interactive session on Perlmutter:
+    salloc -N1 -n32 -t 04:00:00 -C "gpu" -q shared_interactive --gres=gpu:1 -A m5025
+    salloc -N1 -n32 -t 04:00:00 -C "gpu&hbm80g" -q shared_interactive --gres=gpu:1 -A m5025
+Then activate the Conda environment:
+    conda activate /global/cfs/cdirs/m5025/pinchenx/conda_envs/dp2211
+'''
+from utility import *
+from deepmd.calculator import DP
+from ase.optimize import FIRE
+from ase.io import write
+from matplotlib import pyplot as plt
+import numpy as np
+from time import time
+import csv
+import os
+import logging
+
+"""
+Simulation Parameters
+"""
+nepoch = 100000
+temperature = 600  ## temperature in K
+kb = 8.617e-5  ## Boltzmann constant in eV/K
+kbT = kb * temperature
+fmax = 0.02  ## force threshold for the FIRE optimization, previously 0.01, seems to be too strict
+fire_max_steps = 200  ## maximum number of steps for the FIRE optimization, previously unlimited
+# neighbor_cutoff = 5 ## allow only nearest neighbor swap. we should try this, checking if it causes any issue.
+neighbor_cutoff = 6 ## allow nearest and next-nearest neighbor swap, this is the previous setting
+cell_size = np.array([12, 12, 12])
+ncell = np.prod(cell_size)
+
+"""
+Preprocessing
+"""
+## create directories for saving the figures and trajectories
+figure_dir = 'figures_{}_4'.format(cell_size[0])
+traj_dir = 'trajs_{}_4'.format(cell_size[0])
+logging_dir = 'logs_{}_4'.format(cell_size[0])
+logging.basicConfig(filename='{}/optimize.log'.format(logging_dir), level=logging.INFO)
+os.makedirs(figure_dir, exist_ok=True)
+os.makedirs(traj_dir, exist_ok=True)
+os.makedirs(logging_dir, exist_ok=True)
+
+# Load initial config
+pmn = ase.io.read('/global/homes/x/xinyuxu/m5025/Ferroic/PMN/Finite_Temp_MC/12X12X12/trajs_12_3/f4003.lmp', format='lammps-data', atom_style='atomic')
+update_element(pmn,['Mg', 'Nb','O','Pb'])
+natoms = len(pmn)
+print(pmn)
+
+## get the filter for B-site atoms (Mg or Nb). Although Nb and Mg will be swapped, the filter for B-site won't change.
+sym = pmn.get_chemical_symbols()
+Mg_filter = np.array(sym) == 'Mg'
+Nb_filter = np.array(sym) == 'Nb'
+B_filter = Mg_filter | Nb_filter
+Bsites_indices = np.arange(natoms)[B_filter]   # indices of all B-site
+if B_filter.astype(int).sum() != ncell:
+    raise ValueError('There are {} B-sites, but the number of B-sites should be {}'.format(B_filter.astype(int).sum(), ncell))
+
+## for each B-site, we will find the index of its 6 nearest neighbors. Again, after swapping, the neighboring relation won't change. Only the element type of B-site atoms will be changed.
+Bsites_neighborlist = []
+for bsite_idx in Bsites_indices:
+    nb_idx, nb_sym, nb_dist = get_neighbor(pmn, bsite_idx, cutoff=neighbor_cutoff)  ## sorted by distance from low to high.  
+    nb_Mg_filter = np.array(nb_sym) == 'Mg'
+    nb_Nb_filter = np.array(nb_sym) == 'Nb'
+    nb_B_filter = nb_Mg_filter | nb_Nb_filter
+    nb_idx = nb_idx[nb_B_filter]
+    nb_sym = nb_sym[nb_B_filter]
+    nb_dist = nb_dist[nb_B_filter]
+    if nb_idx.size <6:
+        raise ValueError('Each B-site should have equal to or more than 6 nearest neighbors. Here it has {}'.format(nb_idx.size))
+    Bsites_neighborlist.append(nb_idx)
+
+# Describe the interatomic interactions with DP model
+dpmodel = DP(model="/global/cfs/projectdirs/m5025/Ferroic/PMN/ModelTraining/PMN_production_model/model-compress.pb")
+pmn.calc = dpmodel
+print("initial E={}eV/atom".format(pmn.get_potential_energy()/natoms))
+ 
+# Set the optimizer
+dyn = FIRE(pmn, logfile='{}/fire.log'.format(logging_dir)  )
+dyn.run(fmax=fmax)  ## initial relaxation, do not limit the number of steps
+penergy = [ pmn.get_potential_energy() ]
+
+"""
+MC-MD simulation
+"""
+# create list to save the energy
+nswap = 0
+iters   = [300000]
+before_energies = []
+after_energies = []
+for i in range(nepoch):
+    ## randomly choose one Mg/Nb atom and get its neighborlist
+    choose_bsite_seed = np.random.choice(np.arange(ncell))
+    atom1_idx = Bsites_indices[choose_bsite_seed]
+    atom2_idx = np.random.choice(Bsites_neighborlist[choose_bsite_seed])
+    if sym[atom1_idx] == sym[atom2_idx]:
+        continue
+    else:
+        t0 = time()
+        before_energies.append(penergy[-1])
+        sym = pmn.get_chemical_symbols()
+        sym_new =  sym.copy()
+        sym_new[atom1_idx] = sym[atom2_idx]
+        sym_new[atom2_idx] = sym[atom1_idx]
+        pmn_new = pmn.copy()
+        pmn_new.set_chemical_symbols(sym_new)
+        pmn_new.calc = dpmodel
+        dyn = FIRE(pmn_new, logfile='{}/fire.log'.format(logging_dir) )
+        dyn.run(fmax=fmax, steps=fire_max_steps)   ## limit the number of steps for the FIRE optimization
+        penergy_new = pmn_new.get_potential_energy()
+        after_energies.append(penergy_new)
+        energy_diff = penergy_new - penergy[-1]
+        if energy_diff < 0 or (np.random.rand() < np.exp(-energy_diff/kbT)):
+            pmn = pmn_new
+            penergy.append(penergy_new)
+            nswap += 1
+            iters.append(i)
+            write('./{}/f{}_{}.png'.format(figure_dir, nswap,i+300000), pmn)
+            ase.io.write('./{}/f{}.lmp'.format(traj_dir, nswap), pmn, format='lammps-data')
+            ## logging
+            t1 = time()
+            print('========== epoch={},  swap-{},  time cost={:.3f}s =========='.format(i, nswap, t1-t0))
+            print('attempt to swap {} and {} succeeded, dE={:.3f}eV, '.format(
+                sym[atom1_idx], sym[atom2_idx],energy_diff  ))
+            logging.info('========== epoch={},  swap-{},  time cost={:.3f}s =========='.format(i, nswap, t1-t0))
+            logging.info('attempt to swap {} and {} succeeded, dE={:.3f}eV, '.format(
+                sym[atom1_idx], sym[atom2_idx],energy_diff  ))
+        else:
+            t1 = time()
+            print('========== epoch={},  failed swap,  time cost={:.3f}s =========='.format(i, t1-t0))
+            print('attempt to swap {} and {} failed, dE={:.3f}eV, '.format(
+                sym[atom1_idx], sym[atom2_idx],energy_diff  ))
+            logging.info('========== epoch={},  failed swap,  time cost={:.3f}s =========='.format(i, t1-t0))
+            logging.info('attempt to swap {} and {} failed, dE={:.3f}eV, '.format(
+                sym[atom1_idx], sym[atom2_idx],energy_diff  ))
+
+
+
+"""
+Postprocessing
+"""
+# plot the energy
+penergy = np.array(penergy) * 1000 / natoms # meV/atom
+penergy -= penergy[0]  ## move the zero to first frame
+
+iters   = np.array(iters)
+
+plt.figure()
+plt.plot(iters, penergy, label='ΔE')
+plt.xlabel('Iteration #')
+plt.ylabel('E_pot[meV/atom]')
+plt.legend()
+plt.tight_layout()
+plt.savefig("{}/optimize.png".format(logging_dir))
+
+# save all the energy and swap iter
+with open('{}/swap_energies.csv'.format(logging_dir), 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(['before_energy', 'after_energy'])
+    for b, a in zip(before_energies, after_energies):
+        writer.writerow([b, a])
+
+with open('{}/swap_success_iters.csv'.format(logging_dir), 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(['swap_number', 'iter'])
+    for idx, it in enumerate(iters):
+        writer.writerow([idx, it])
+
+with open(f'{logging_dir}/energy_vs_iter.csv', 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(['iter', 'delta_E_meV_per_atom'])
+    for it, E in zip(iters, penergy):
+        writer.writerow([it, E])
