@@ -34,16 +34,14 @@ ncell = np.prod(cell_size)
 Preprocessing
 """
 ## create directories for saving the figures and trajectories
-figure_dir = 'figures_{}'.format(cell_size[0])
-traj_dir = 'trajs_{}'.format(cell_size[0])
-logging_dir = 'logs_{}'.format(cell_size[0])
+traj_dir = 'trajs'
+logging_dir = 'logs'
 logging.basicConfig(filename='{}/optimize.log'.format(logging_dir), level=logging.INFO)
-os.makedirs(figure_dir, exist_ok=True)
 os.makedirs(traj_dir, exist_ok=True)
 os.makedirs(logging_dir, exist_ok=True)
 
 # Load initial config
-pmn = ase.io.read('/global/homes/x/xinyuxu/m5025/Ferroic/PMN/GenerateStructure/disordered_L6X6X6.lmp', format='lammps-data', atom_style='atomic')
+pmn = ase.io.read('../../01.initial_configs/disordered_L6X6X6.lmp', format='lammps-data', atom_style='atomic')
 update_element(pmn,['Mg', 'Nb','O','Pb'])
 natoms = len(pmn)
 print(pmn)
@@ -72,7 +70,7 @@ for bsite_idx in Bsites_indices:
     Bsites_neighborlist.append(nb_idx)
 
 # Describe the interatomic interactions with DP model
-dpmodel = DP(model="/global/cfs/projectdirs/m5025/Ferroic/PMN/ModelTraining/PMN_production_model/model-compress.pb")
+dpmodel = DP(model="model-compress.pb")
 pmn.calc = dpmodel
 print("initial E={}eV/atom".format(pmn.get_potential_energy()/natoms))
  
@@ -116,7 +114,6 @@ for i in range(nepoch):
             penergy.append(penergy_new)
             nswap += 1
             iters.append(i)
-            write('./{}/f{}_{}.png'.format(figure_dir, nswap,i), pmn)
             ase.io.write('./{}/f{}.lmp'.format(traj_dir, nswap), pmn, format='lammps-data')
             ## logging
             t1 = time()
@@ -167,7 +164,7 @@ with open('{}/swap_success_iters.csv'.format(logging_dir), 'w', newline='') as c
     for idx, it in enumerate(iters):
         writer.writerow([idx, it])
 
-with open(f'{logging_dir}/energy_vs_iter.csv', 'w', newline='') as csvfile:
+with open('{}/energy_vs_iter.csv'.format(logging_dir), 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow(['iter', 'delta_E_meV_per_atom'])
     for it, E in zip(iters, penergy):
