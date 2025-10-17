@@ -1,32 +1,24 @@
-'''
-Test this on 80GB GPU. start an interactive session on Perlmutter:
-    salloc -N1 -n32 -t 04:00:00 -C "gpu" -q shared_interactive --gres=gpu:1 -A m5025
-    salloc -N1 -n32 -t 04:00:00 -C "gpu&hbm80g" -q shared_interactive --gres=gpu:1 -A m5025
-Then activate the Conda environment:
-    conda activate /global/cfs/cdirs/m5025/pinchenx/conda_envs/dp2211
-'''
-from utility import *
-from deepmd.calculator import DP
+import os
+from time import time
+import numpy as np
+import csv
 from ase.optimize import FIRE
 from ase.io import write
-from matplotlib import pyplot as plt
-import numpy as np
-from time import time
-import csv
-import os
-import logging
+from deepmd.calculator import DP
+from utility import *
+
 
 """
 Simulation Parameters
 """
-nepoch = 100000
+nepoch = 300000
 temperature = 600  ## temperature in K
 kb = 8.617e-5  ## Boltzmann constant in eV/K
 kbT = kb * temperature
 fmax = 0.02  ## force threshold for the FIRE optimization, previously 0.01, seems to be too strict
 fire_max_steps = 200  ## maximum number of steps for the FIRE optimization, previously unlimited
 # neighbor_cutoff = 5 ## allow only nearest neighbor swap. we should try this, checking if it causes any issue.
-neighbor_cutoff = 6 ## allow nearest and next-nearest neighbor swap, this is the previous setting
+neighbor_cutoff = 6 ## allow nearest and next-nearest neighbor swap
 cell_size = np.array([12, 12, 12])
 ncell = np.prod(cell_size)
 
@@ -34,16 +26,13 @@ ncell = np.prod(cell_size)
 Preprocessing
 """
 ## create directories for saving the figures and trajectories
-figure_dir = 'figures_{}_4'.format(cell_size[0])
-traj_dir = 'trajs_{}_4'.format(cell_size[0])
-logging_dir = 'logs_{}_4'.format(cell_size[0])
-logging.basicConfig(filename='{}/optimize.log'.format(logging_dir), level=logging.INFO)
-os.makedirs(figure_dir, exist_ok=True)
+traj_dir = 'trajs'
+logging_dir = 'logs'
 os.makedirs(traj_dir, exist_ok=True)
 os.makedirs(logging_dir, exist_ok=True)
 
 # Load initial config
-pmn = ase.io.read('/global/homes/x/xinyuxu/m5025/Ferroic/PMN/Finite_Temp_MC/12X12X12/trajs_12_3/f4003.lmp', format='lammps-data', atom_style='atomic')
+pmn = ase.io.read('../../01.initial_configs/sublattice_L12X12X12.lmp', format='lammps-data', atom_style='atomic')
 update_element(pmn,['Mg', 'Nb','O','Pb'])
 natoms = len(pmn)
 print(pmn)
@@ -72,7 +61,7 @@ for bsite_idx in Bsites_indices:
     Bsites_neighborlist.append(nb_idx)
 
 # Describe the interatomic interactions with DP model
-dpmodel = DP(model="/global/cfs/projectdirs/m5025/Ferroic/PMN/ModelTraining/PMN_production_model/model-compress.pb")
+dpmodel = DP(model="model-compress.pb")
 pmn.calc = dpmodel
 print("initial E={}eV/atom".format(pmn.get_potential_energy()/natoms))
  
@@ -86,7 +75,7 @@ MC-MD simulation
 """
 # create list to save the energy
 nswap = 0
-iters   = [300000]
+iters   = [0]
 before_energies = []
 after_energies = []
 for i in range(nepoch):
@@ -116,58 +105,33 @@ for i in range(nepoch):
             penergy.append(penergy_new)
             nswap += 1
             iters.append(i)
-            write('./{}/f{}_{}.png'.format(figure_dir, nswap,i+300000), pmn)
             ase.io.write('./{}/f{}.lmp'.format(traj_dir, nswap), pmn, format='lammps-data')
             ## logging
             t1 = time()
             print('========== epoch={},  swap-{},  time cost={:.3f}s =========='.format(i, nswap, t1-t0))
             print('attempt to swap {} and {} succeeded, dE={:.3f}eV, '.format(
                 sym[atom1_idx], sym[atom2_idx],energy_diff  ))
-            logging.info('========== epoch={},  swap-{},  time cost={:.3f}s =========='.format(i, nswap, t1-t0))
-            logging.info('attempt to swap {} and {} succeeded, dE={:.3f}eV, '.format(
-                sym[atom1_idx], sym[atom2_idx],energy_diff  ))
         else:
             t1 = time()
             print('========== epoch={},  failed swap,  time cost={:.3f}s =========='.format(i, t1-t0))
             print('attempt to swap {} and {} failed, dE={:.3f}eV, '.format(
                 sym[atom1_idx], sym[atom2_idx],energy_diff  ))
-            logging.info('========== epoch={},  failed swap,  time cost={:.3f}s =========='.format(i, t1-t0))
-            logging.info('attempt to swap {} and {} failed, dE={:.3f}eV, '.format(
-                sym[atom1_idx], sym[atom2_idx],energy_diff  ))
-
-
 
 """
 Postprocessing
 """
-# plot the energy
-penergy = np.array(penergy) * 1000 / natoms # meV/atom
-penergy -= penergy[0]  ## move the zero to first frame
-
 iters   = np.array(iters)
-
-plt.figure()
-plt.plot(iters, penergy, label='ΔE')
-plt.xlabel('Iteration #')
-plt.ylabel('E_pot[meV/atom]')
-plt.legend()
-plt.tight_layout()
-plt.savefig("{}/optimize.png".format(logging_dir))
+penergy = np.array(penergy) * 1000 / natoms # meV/atom
+penergy -= penergy[0]
 
 # save all the energy and swap iter
-with open('{}/swap_energies.csv'.format(logging_dir), 'w', newline='') as csvfile:
+with open('{}/energy_of_all_trials.csv'.format(logging_dir), 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow(['before_energy', 'after_energy'])
+    writer.writerow(['last_energy', 'proposed_energy'])
     for b, a in zip(before_energies, after_energies):
         writer.writerow([b, a])
 
-with open('{}/swap_success_iters.csv'.format(logging_dir), 'w', newline='') as csvfile:
-    writer = csv.writer(csvfile)
-    writer.writerow(['swap_number', 'iter'])
-    for idx, it in enumerate(iters):
-        writer.writerow([idx, it])
-
-with open(f'{logging_dir}/energy_vs_iter.csv', 'w', newline='') as csvfile:
+with open('{}/energy_accepted.csv'.format(logging_dir), 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow(['iter', 'delta_E_meV_per_atom'])
     for it, E in zip(iters, penergy):

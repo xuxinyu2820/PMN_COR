@@ -10,7 +10,7 @@ from utilities import *
 latt_size = [12, 12, 12]
 l1, l2, l3 = latt_size
 ncells = l1 * l2 * l3
-traj_folder = '/global/cfs/projectdirs/m5025/Ferroic/PMN/Finite_Temp_MC/12X12X12'
+traj_folder = '../03.12X12X12/600K/trajs'
 
 ## load the file
 if os.path.exists('buffer/traj.pkl'):
@@ -19,15 +19,8 @@ if os.path.exists('buffer/traj.pkl'):
 else:
     traj = []
     for frame_idx in range(1,4004):
-        # if (frame_idx-1) % 10 == 0:
-        #     pass
-        # else:
-        #     continue
-        for subfolder in [1,2,3]:
-            file_path = os.path.join(traj_folder, f'trajs_12_{subfolder}/f{frame_idx}.lmp')
-            if os.path.exists(file_path):
-                atoms = ase.io.read(file_path, format='lammps-data', atom_style='atomic')
-                break
+        file_path = os.path.join(traj_folder, f'f{frame_idx}.lmp')
+        atoms = ase.io.read(file_path, format='lammps-data', atom_style='atomic')
         traj.append(atoms)
     
     ## Reset the chemical symbols of B-site atoms. Lammps data file uses 'H', 'Be', 'He', 'Li' to represent Mg, Pb, Nb, O, respectively.
@@ -46,6 +39,7 @@ else:
             else:
                 raise ValueError('Invalid symbol')
         atoms.set_chemical_symbols(syms)
+    os.makedirs('buffer', exist_ok=True)
     with open('buffer/traj.pkl', 'wb') as f:
         pickle.dump(traj, f)
 

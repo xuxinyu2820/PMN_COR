@@ -114,7 +114,7 @@ if __name__ == '__main__':
         scattering_function_avg = data[1]
     else:
         ## Trajectory
-        traj_path = "/global/cfs/projectdirs/m5025/Ferroic/PMN/MD/traj_12/pmn_{:.1f}K_5000000steps.traj".format(temp)
+        traj_path = "../../01.MD_Simulation/NVT/{:d}K/pmn_{:.1f}K_5000000steps.traj".format(temp, temp)
         traj = Trajectory(traj_path)
         nframes = len(traj)
         scattering_function_list = []

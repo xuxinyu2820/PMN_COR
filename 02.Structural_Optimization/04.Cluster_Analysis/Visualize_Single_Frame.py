@@ -8,18 +8,12 @@ from utilities import *
 
 latt_size = [12, 12, 12]
 l1, l2, l3 = latt_size
-traj_folder = '/global/cfs/projectdirs/m5025/Ferroic/PMN/Finite_Temp_MC/12X12X12'
+traj_folder = '../03.12X12X12/600K/trajs'
 
 ## load the file
 frame_idx = 4003  
-# frame_idx = 4003
-atoms = None
-for subfolder in [1,2,3]:
-    file_path = os.path.join(traj_folder, f'trajs_12_{subfolder}/f{frame_idx}.lmp')
-    if os.path.exists(file_path):
-        atoms = ase.io.read(file_path, format='lammps-data', atom_style='atomic')
-if atoms is None:
-    raise ValueError('File not found')
+file_path = os.path.join(traj_folder, f'f{frame_idx}.lmp')
+atoms = ase.io.read(file_path, format='lammps-data', atom_style='atomic')
 
 ## get the effective lattice of B-site atoms
 syms_lmp = atoms.get_chemical_symbols()
