@@ -97,16 +97,10 @@ for i_row, (cat, row_title, vmax, cmap) in enumerate(rows):
             aspect="equal",
         )
 
-        # 
         imgs_row[i_row] = im
 
-        # 
         if j_col == 0:
             ax.set_ylabel(r"$d^y_i$ (Å)")
-
-        # 
-        # if i_row == 0:
-            # ax.set_title(f"{T} K")
 
         ax.set_xlim(-lim, lim)
         ax.set_ylim(-lim, lim)
@@ -115,13 +109,13 @@ for ax in axes.ravel():
     ax.set_xticks([-0.2, 0.0, 0.2])
     ax.set_xticklabels(['-0.2', '0.0', '0.2'])
 
-# 底下一排 x label
+# bottom row x label
 for ax in axes[-1, :]:
     ax.set_xlabel(r"$d^x_i$ (Å)")
 
 # colorbars
 for i_row, im in enumerate(imgs_row):
-    # 这一排所有的轴
+    # all axes in this row
     row_axes = axes[i_row, :].ravel().tolist()
     cbar = fig.colorbar(
         im,

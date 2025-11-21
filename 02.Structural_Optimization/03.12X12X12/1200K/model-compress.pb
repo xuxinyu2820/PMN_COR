@@ -1,0 +1,1 @@
+/global/homes/p/pinchenx/cfs_m5025/Ferroic/PMN_paper_repo/01.DP_Model_Training/Production_Model/model-compress.pb

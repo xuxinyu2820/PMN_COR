@@ -8,11 +8,11 @@ import matplotlib as mpl
 # A dictionary containing values for some common elements.
 # Source: NIST, https://www.ncnr.nist.gov/resources/n-lengths/
 
-mpl.rcParams['axes.linewidth'] = 3      # 坐标轴边框加粗
-mpl.rcParams['axes.titlesize'] = 24     # 标题字号
-mpl.rcParams['axes.labelsize'] = 20     # 坐标轴标签字号
-mpl.rcParams['xtick.labelsize'] = 20    # x 轴刻度字号
-mpl.rcParams['ytick.labelsize'] = 20    # y 轴刻度字号
+mpl.rcParams['axes.linewidth'] = 3   
+mpl.rcParams['axes.titlesize'] = 24     
+mpl.rcParams['axes.labelsize'] = 20    
+mpl.rcParams['xtick.labelsize'] = 20   
+mpl.rcParams['ytick.labelsize'] = 20    
 
 SCATTERING_LENGTHS = {
     'O': 5.803,

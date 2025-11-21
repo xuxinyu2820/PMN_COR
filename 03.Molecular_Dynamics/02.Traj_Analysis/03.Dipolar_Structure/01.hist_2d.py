@@ -21,7 +21,6 @@ mpl.rcParams['ytick.labelsize'] = 30
 
 # tools
 def get_B_to_O6(atoms, cutoff=2.3):
-    """构建 B→最近6个O 邻居索引（按距离排序）"""
     Z = atoms.get_atomic_numbers()
     pos = atoms.get_positions()
     atoms.set_pbc(True)
@@ -61,7 +60,6 @@ def get_B_to_B6(atoms, cutoff=3.0):
     return B_to_B6
 
 def compute_BO6_displacement(atoms, B_idx, B_to_O6):
-    """计算 BO₆ 位移向量（B 相对 O₆ 八面体中心）"""
     pos = atoms.get_positions()
     box = atoms.get_cell().lengths()
     disp = np.zeros((len(B_idx), 3))
@@ -87,10 +85,10 @@ def save_2d_hist(data, fname, xlabel, ylabel, vmin=0, vmax=25, cmap='Blues'):
         cmap=cmap
     )
 
-    # 手动归一化
-    h_norm = h / vmax   # <--- 每个格子除以 vmax
+    # normalization
+    h_norm = h / vmax  
 
-    plt.clf()  # 清空之前的直方图
+    plt.clf()  
     plt.imshow(
         h_norm.T, origin='lower',
         extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]],
@@ -102,7 +100,7 @@ def save_2d_hist(data, fname, xlabel, ylabel, vmin=0, vmax=25, cmap='Blues'):
     ax.set_aspect('equal', 'box')
     ax.set_xticks([-0.2, 0.0, 0.2])
     ax.set_xticklabels(['-0.2', '0.0', '0.2'])
-    cbar = plt.colorbar(label="")      # 统一色标范围 0–1
+    cbar = plt.colorbar(label="")      # colorbar
     cbar.set_ticks([0.0, 0.5, 1.0])
     cbar.set_ticklabels(["0.0", "0.5", "1.0"])
     plt.tight_layout()
@@ -135,15 +133,15 @@ if __name__ == "__main__":
         disp = compute_BO6_displacement(atoms, B_idx, B_to_O6)
         Z_frame = atoms.get_atomic_numbers()
 
-        # Mg 去重集合
+        # Mg unique set
         mg_used = set()
 
         for i_b, b in enumerate(B_idx):
             if Z_frame[b] != 41:
                 continue
 
-            v = disp[i_b]          # 这个 Nb 的 (dx, dy, dz)
-            neigh = B_to_B6[b]     # 这个 Nb 在第 0 帧定义好的 6 个 B 邻居
+            v = disp[i_b]          # this Nb's (dx, dy, dz)
+            neigh = B_to_B6[b]     # this Nb's 6 B neighbors defined in frame 0
 
             if len(neigh) < 6:
                 continue
