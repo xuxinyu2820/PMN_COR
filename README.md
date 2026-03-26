@@ -6,8 +6,7 @@ Some large trajectory files and logging files are removed due to the size limit 
 _Directory Structure_
 
 ```
-PMN-CACE-LR-PBEsol/  -> This directory contains the results using the CACE-LR model with PBEsol functional. 
-Includes structural optimization and ordering analysis.
+PMN-CACE-LR-PBEsol/  -> This directory contains the PMN structural optimization and analysis using the CACE-LR model with PBEsol functional. 
 
 PMN-CACE-LR-SCAN/  -> This directory contains the results using the CACE-LR model with SCAN functional. 
 
