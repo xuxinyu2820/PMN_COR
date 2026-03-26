@@ -6,14 +6,21 @@ Some large trajectory files and logging files are removed due to the size limit 
 _Directory Structure_
 
 ```
-PMN-CACE-LR-PBEsol/  -> This directory contains the results using the CACE-LR model with PBEsol functional. Includes structural optimization and ordering analysis.
+PMN-CACE-LR-PBEsol/  -> This directory contains the results using the CACE-LR model with PBEsol functional. 
+Includes structural optimization and ordering analysis.
+
 PMN-CACE-LR-SCAN/  -> This directory contains the results using the CACE-LR model with SCAN functional. 
+
 PMN-DP-SCAN/ -> This directory contains the code and results using the Deep Potential (DP) model trained on SCAN data.
+
 - 01.DP_Model_Training: training setup and configurations  
 - 02.Structural_Optimization: Monte Carlo / relaxation results  
 - 03.Molecular_Dynamics: MD simulations 
+
 PMN-UniPero-PBEsol/ -> This directory contains the results using the UniPero universal potential (PBEsol). 
+
 PMN-UniPero-PBEsol/ -> This directory contains the results for PST using UniPero.
+
 PMN-UniPero-PBEsol/ -> This directory contains the results for PZT using UniPero.
 ```
 
