@@ -1,14 +1,20 @@
 # PMN_COR
 
-This repo is used to store the dataset, models, code and results for supporting and reproducing the paper: "Intrinsic structure of PMN relaxor from first principles".
+This repo is used to store the dataset, models, code and results for supporting and reproducing the paper: "Intrinsic structure of relaxor ferroelectrics from first principles".
 Some large trajectory files and logging files are removed due to the size limit of GitHub. But crucial outputs are kept for immediate reproduction of main results in the paper.
 
 _Directory Structure_
 
 ```
-01.DP_Model_Training/  -> This directory contains the code and results for training the DeePMD-kit model.
-02.Structural_Optimization/ -> This directory contains the code and results for structural optimization with the FIRE-Swap algorithm.
-03.Molecular_Dynamics/ -> This directory contains the code and results for molecular dynamics simulations based on the optimized compositional structure.
+PMN-CACE-LR-PBEsol/  -> This directory contains the results using the CACE-LR model with PBEsol functional. Includes structural optimization and ordering analysis.
+PMN-CACE-LR-SCAN/  -> This directory contains the results using the CACE-LR model with SCAN functional. 
+PMN-DP-SCAN/ -> This directory contains the code and results using the Deep Potential (DP) model trained on SCAN data.
+- 01.DP_Model_Training: training setup and configurations  
+- 02.Structural_Optimization: Monte Carlo / relaxation results  
+- 03.Molecular_Dynamics: MD simulations 
+PMN-UniPero-PBEsol/ -> This directory contains the results using the UniPero universal potential (PBEsol). 
+PMN-UniPero-PBEsol/ -> This directory contains the results for PST using UniPero.
+PMN-UniPero-PBEsol/ -> This directory contains the results for PZT using UniPero.
 ```
 
 _Reproducibility_
