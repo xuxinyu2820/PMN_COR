@@ -32,5 +32,8 @@ Softwares:
 - ASE 3.23.0
 - DPGEN
 - VASP 6.2.1; POTCAR: Mg_pv 13Apr2007, Nb_pv 08Apr2002, O 08Apr2002, Pb_d 06Sep2000
+- PeroStruct: https://github.com/Kehan-Cai-nanako/PeroStruc.git
+- CACE-LR model (in-house MLIP, implementation will be released later when it's available).  
+  A related implementation can be found at: https://github.com/BingqingCheng/cace-lr-fit
 
 To reproduce, any v2 version of DeePMD-kit should be able to work. 
